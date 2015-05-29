@@ -1,3 +1,12 @@
-from MiniPySynth import MiniPySynth
+repita i -> (0,9): {
+    do8
+    }
+algo = do4
+x = do4
 
-MiniPySynth().evalu("""repita i -> (0,4): { do8 }""")
+si x == algo: {
+    do4 re8
+    }
+si no: {
+    mi8
+    }
