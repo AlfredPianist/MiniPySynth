@@ -1,21 +1,25 @@
 from parsimonious.grammar import Grammar
 
+#from pyo import *
+
 class MiniPySynth(object):
 
     def __init__(self, env={}):
         self.env = env
-        print env
-
+        self.melodia = []
+        print self.melodia
+        
     def parse(self, source):
         grammar = "\n".join(v.__doc__ for k, v in vars(self.__class__).items()
                             if not k.startswith('__') and hasattr(v, '__doc__')
                                                       and getattr(v, '__doc__'))
+        #print Grammar(grammar)['program'].parse(source)
         return Grammar(grammar)['program'].parse(source)
 
     def evalu(self, source):
         node = self.parse(source) if isinstance(source, str) else source
         method = getattr(self, node.expr_name, lambda node, children: children)
-        if node.expr_name in ["ifelse", "ifonly"]:
+        if node.expr_name in ["func", "ifelse", "ifonly"]:
             return method(node)
         return method(node, [self.evalu(n) for n in node])
 
@@ -28,6 +32,40 @@ class MiniPySynth(object):
         number / note / name) _ """
         print "Expresion", children[1][0]
         return children[1][0]
+
+    def func(self, node, children):
+        """ func = "crear" _ leftvalue "(" parameters ")" _ "{" expr "}" """
+        _, _, name, _, params, _, _, _, expr, _ = node
+        print "Funcion", node
+##        params = map(self.evalu, params)
+##        def func(*args):
+##            env = dict(self.env.items() + zip(params, args))
+##            print env
+##            return MiniPySynth(env).evalu(expr)
+##        return func
+
+    def call(self, node, children):
+        'call = name "(" arguments ")"'
+        name, _, arguments, _ = children
+        return name(*arguments)
+
+    def arguments(self, node, children):
+        'arguments = expr*'
+        return children
+    
+    def parameters(self, node, children):
+        """ parameters = leftvalue* """
+        return children
+
+##    def playRule(self, node, children):
+##        """ playRule = "play" """
+##        s = Server().boot()
+##        s.start()
+##        t = SquareTable(order=15).normalize()
+##        met = Metro(time=.125, poly=2).play()
+##        amp = TrigEnv(met, table=t, dur=.25, mul=.3)
+##        a = Sine(freq = self.melodia, mul = amp).out()
+##        print self.melodia
 
     def rep(self, node, children):
         """ rep = "repita" _ leftvalue "->" _ "(" number "," number ")" ":" _
@@ -88,6 +126,13 @@ class MiniPySynth(object):
     def freq(self, node, children):
         """ freq = "do" / "re" / "mi" / "fa" / "sol" / "la" / "si" """
         print "Frecuencia", node.text
+##        MIDI = {"do": 60, "re": 62, "mi": 64, "fa": 65, "sol": 67,
+##                "la": 69, "si": 71}
+##        MIDImel = []
+##        for k, v in MIDI.iteritems():
+##            if k == node.text:
+##                MIDImel.append(v)
+##        self.melodia.extend(midiToHz(MIDImel))     
         return node.text
 
     def alt(self, node, children):
@@ -112,3 +157,8 @@ class MiniPySynth(object):
 
     def _(self, node, children):
         """ _ = ~r"\s*" """
+
+f = open("test_synth.py", "r")
+content = f.readlines()
+for l in content:
+    MiniPySynth().evalu(l)
